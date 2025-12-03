@@ -1,5 +1,9 @@
-SpeechRecognition>=3.10.0
-pyaudio>=0.2.11
-openai>=1.0.0
-python-dotenv>=1.0.0
+# Voice Recognition
+SpeechRecognition>=3.10.0  # Google Speech Recognition API wrapper
+pyaudio>=0.2.11            # Audio I/O library (required by SpeechRecognition)
 
+# LLM Integration
+openai>=1.0.0              # OpenAI API client for GPT-5
+
+# Environment Variables
+python-dotenv>=1.0.0       # Load environment variables from .env file
