@@ -12,6 +12,53 @@ This project implements a voice-controlled robot system that:
 
 ## System Architecture
 
+### Simplified Architecture (Module Overview)
+
+```
+                    ┌─────────────────────┐
+                    │   User Voice Input   │
+                    │  (Natural Language)  │
+                    └──────────┬───────────┘
+                               │
+                               ▼
+                    ┌─────────────────────┐
+                    │   Voice Module       │
+                    │  (Speech Recognition)│
+                    └──────────┬───────────┘
+                               │ Text Command
+                               ▼
+                    ┌─────────────────────┐
+                    │    LLM Module       │
+                    │  (Plan Generation)  │
+                    └──────────┬───────────┘
+                               │ Execution Plan
+                               ▼
+                    ┌─────────────────────┐
+                    │  Executor Module    │
+                    │  (Plan Execution)   │
+                    └──────────┬───────────┘
+                               │ Robot Commands
+                               ▼
+                    ┌─────────────────────┐
+                    │  Socket Client      │
+                    │  (Communication)    │
+                    └──────────┬───────────┘
+                               │ TCP Socket
+                               ▼
+                    ┌─────────────────────┐
+                    │  Robot Server       │
+                    │  (Raspberry Pi)     │
+                    └──────────┬───────────┘
+                               │
+                               ▼
+                    ┌─────────────────────┐
+                    │  Robot Hardware     │
+                    │  (Arm + Vision)     │
+                    └─────────────────────┘
+```
+
+### Detailed Architecture (Full System)
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                         User Voice Input                                │
