@@ -468,7 +468,7 @@ This video demonstrates the robot's ability to perform both relative and absolut
 - **Absolute Movement**: Commands that move the robot to specific coordinates
 - Shows how the system maintains context between commands
 
-📹 [View Simple Command Demo Video](presentation/simple_command.MOV)
+📹 [View Simple Command Demo Video](https://github.com/XiaoSama1874/LLMBasedVoiceControlActionRobot/releases/download/1.0/simple_command.MOV)
 
 #### 2. Complex Command Demo - Pick and Place
 This video demonstrates complex pick and place operations:
@@ -477,7 +477,7 @@ This video demonstrates complex pick and place operations:
 - **Multi-step Planning**: Shows how the LLM generates complex execution plans for intricate tasks
 - **Context Management**: Demonstrates how the system maintains state across multiple operations
 
-📹 [View Complex Command Demo Video](presentation/complex_command.MOV)
+📹 [View Complex Command Demo Video](https://github.com/XiaoSama1874/LLMBasedVoiceControlActionRobot/releases/download/1.0/complex_command.MOV)
 
 ## Testing
 
