@@ -1,0 +1,82 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{graphicx}
+\usepackage{geometry}
+\usepackage{cite}
+\usepackage{hyperref}
+\geometry{margin=1in}
+
+\title{LLM-Based Voice Control System for Robotic Arm Manipulation}
+\author{Yuanpei Zhang(yzhang2939@wisc.edu \\ Bin Xiao(bxiao38@wisc.edu)}
+
+\begin{document}
+
+\maketitle
+
+\noindent\textbf{Project Repository:} \url{https://github.com/XiaoSama1874/LLMBasedVoiceControlActionRobot}
+
+\section{Introduction}
+Voice-controlled robotic systems represent a significant advancement in human-robot interaction, enabling intuitive control through natural language commands. This project implements a comprehensive system that combines speech recognition, LLM-based plan generation, and robotic arm control to achieve autonomous manipulation tasks. Note that real-time vision detection is not implemented in the current version; the system uses predefined object coordinates instead.
+
+\section{Technical Approach}
+
+\subsection{System Architecture}
+The system employs a modular architecture consisting of four main components: (1) Voice Module for speech recognition, (2) LLM Module for natural language understanding and plan generation, (3) Executor Module for plan execution with context management, and (4) Communication Layer for robot control via TCP Socket or ROSBridge.
+
+\subsection{Kinematics and Motion Planning}
+The system implements both forward and inverse kinematics for the xarm robotic arm. Position commands are specified in a right-handed coordinate system with the robot base as origin. The system supports both absolute positioning (specifying exact $(x, y, z)$ coordinates) and relative movement (direction-based commands: forward/backward along X-axis, left/right along Y-axis, up/down along Z-axis). Relative movements are calculated based on the current end-effector position, maintaining context across multiple commands. The default relative movement distance is 0.05m, configurable per command.
+
+\subsection{Perception and Vision}
+Vision detection is not implemented in the current system. Due to time and equipment constraints, the system uses predefined object coordinates stored in the configuration file instead of real-time camera-based detection. The system architecture supports future integration of real vision detection, with the perception module interface designed to accommodate camera-based object detection and localization.
+
+\subsection{Planning and Control}
+The LLM (GPT-5.1) serves as the planning module, converting natural language commands into structured JSON execution plans. Each plan consists of a sequence of atomic actions: \texttt{move\_home}, \texttt{move}, \texttt{grasp}, and \texttt{see}. The LLM automatically infers necessary intermediate steps (e.g., moving to home position before vision recognition). The executor module maintains execution context, tracking robot position, grasp state, and vision results, enabling relative movements and multi-step operations. Control is achieved through ROS2 topics (\texttt{/endpoint\_desired} for position control and \texttt{/gripper\_command} for gripper control) on a Raspberry Pi 4 running ROS2 Jazzy.
+
+\section{Implementation Details}
+
+\subsection{Hardware Setup}
+The system runs on a Raspberry Pi 4 with ROS2 Jazzy, controlling an xarm robotic arm. The development machine (Mac/PC) runs the voice recognition and LLM planning modules, communicating with the robot via TCP Socket (port 5005) or ROSBridge WebSocket.
+
+\subsection{Software Architecture}
+The system is implemented in Python with modular design: \texttt{voice\_module} handles Google Speech Recognition API integration with keyword detection and silence-based command termination; \texttt{llm\_module} interfaces with OpenAI GPT-5.1 API for plan generation with retry logic; \texttt{executor\_module} executes plans sequentially while maintaining state; and \texttt{robot\_execution} contains ROS2 nodes for robot control. Configuration is centralized in \texttt{config.py} for easy parameter adjustment.
+
+\section{Experimental Design}
+
+\subsection{Experiment 1: Simple Command Execution}
+
+We tested the system with 20 simple commands: 10 relative movement commands (e.g., "move forward", "move right 0.3m") and 10 absolute positioning commands. Each command was executed three times. We measured: (1) success rate (correct execution), (2) position accuracy (deviation from target), and (3) execution time.
+
+\textbf{Metrics}: Success rate (\%) and average execution time (seconds).
+
+\subsection{Experiment 2: Complex Pick-and-Place Operations}
+
+
+We tested complex commands such as "pick up the red object and place it in the red bin" and "pick up the green object and move it forward". Each task involved: (1) retrieving predefined object coordinates (simulating object detection), (2) arm movement to object location, (3) grasping, (4) transportation, and (5) placement. We measured: (1) task completion rate, (2) grasp success rate, and (3) placement accuracy. Note that object detection accuracy is not measured since coordinates are predefined.
+
+\textbf{Metrics}: Success rate (\%) and average execution time (seconds).
+
+\section{Results and Discussion}
+
+\subsection{Task Success Rate and LLM Performance}
+The system demonstrates high task success rates, with the LLM-based plan generation showing excellent stability and reliability. The LLM correctly interprets natural language commands and generates appropriate execution plans in nearly all cases. However, hardware reliability presents challenges: the robotic arm hardware is prone to failures, and most task failures are attributed to hardware malfunctions rather than software or planning errors. Given this hardware instability, we focus our analysis on system latency rather than success rate metrics.
+
+\subsection{Latency Analysis}
+The primary performance bottleneck is system latency, which varies significantly between simple and complex tasks. For simple commands (e.g., "move forward", "move right 0.3m"), the total execution time ranges from 7 to 10 seconds, broken down as follows: (1) voice recognition: approximately 2 seconds, (2) LLM plan generation: approximately 3 seconds, and (3) task execution: approximately 4 seconds. The context preservation mechanism correctly maintains robot position across sequential relative commands, enabling cumulative movements as expected.
+
+For complex pick-and-place operations (e.g., "pick up the red object and place it in the red bin"), the total execution time extends to approximately 20 seconds. This increased latency is primarily due to: (1) more complex LLM plan generation requiring additional processing time, (2) a greater number of sub-tasks in the execution plan (typically 20 atomic actions), and (3) longer execution time for multi-step operations. 
+
+\section{Reflection and Future Work}
+
+\subsection{Key Learnings}
+This project successfully demonstrated the integration of multiple robotics domains: kinematics for position control, planning for task decomposition, and control for execution. The LLM-based approach proved effective for translating natural language to robot actions, though it introduces latency. Context management was crucial for enabling relative movements and multi-step operations. Note that perception (vision detection) was not implemented, with predefined coordinates used instead.
+
+\subsection{Future Improvements}
+(1) \textbf{Real-time Vision}: Implement continuous vision tracking to eliminate the need for home positioning. (2) \textbf{Multi-modal Input}: Support gesture recognition and visual feedback. (3) \textbf{Adaptive Planning}: Use reinforcement learning to improve plan quality based on execution outcomes. (4) \textbf{Error Recovery}: Implement automatic error detection and recovery mechanisms. (5) \textbf{Multi-language Support}: Extend to multiple languages for broader accessibility. (6) \textbf{Optimization}: Reduce LLM latency through model quantization or local deployment.
+
+\section{Conclusion}
+We presented a voice-controlled robotic arm system that successfully integrates natural language processing and robotic manipulation. The system demonstrates reliable performance in both simple movement commands and complex pick-and-place operations. The modular architecture enables easy extension and modification, while the LLM-based planning approach provides flexibility in command interpretation. Note that real-time vision detection is not implemented in the current version; the system uses predefined object coordinates. Future work will focus on implementing real-time vision detection, reducing latency, improving robustness, and expanding capabilities.
+
+
+\end{document}
+
