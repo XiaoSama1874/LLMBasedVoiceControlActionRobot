@@ -244,6 +244,7 @@ VoiceControlRobot/
 │                                # - Voice settings (keywords, language, timeouts)
 │                                # - LLM settings (model, temperature, tokens)
 │                                # - Robot settings (home position, relative move distance)
+│                                # - Communication settings (socket/rosbridge)
 │                                # - Direction mappings
 │
 ├── main_voice.py               # Main entry point for voice-controlled system
@@ -264,17 +265,48 @@ VoiceControlRobot/
 ├── executor_module/            # Plan execution and robot control
 │   ├── __init__.py
 │   ├── executor.py            # Main executor (runs plans, manages context)
-│   └── robot_functions.py     # Atomic robot functions (move, grasp, see, move_home)
+│   ├── robot_functions.py     # Atomic robot functions (move, grasp, see, move_home)
+│   ├── socket_client.py       # TCP Socket client for robot communication
+│   └── rosbridge_client.py    # ROSBridge WebSocket client for robot communication
 │
-└── test/                       # Unit tests
-    ├── __init__.py
-    ├── test_voice_module.py   # Voice module tests
-    ├── test_llm_module.py     # LLM module tests
-    ├── test_executor_module.py # Executor module tests
-    ├── test_plan_parser.py    # Plan parser tests
-    ├── test_full_pipeline.py  # End-to-end pipeline tests
-    └── llm_plans/             # Generated execution plans from tests
-        └── *.txt              # Saved LLM-generated plans
+├── robot_execution/            # Robot server-side code (Raspberry Pi)
+│   ├── socket_server.py       # TCP Socket server (ROS2 node)
+│   ├── robot_command_receiver.py  # ROSBridge command receiver (ROS2 node)
+│   ├── command_xarm.py        # xarm robot command interface
+│   ├── pick_and_place.py      # Pick and place operations
+│   ├── xarm_kinematics.py     # Robot kinematics calculations
+│   ├── xarm_automatic.launch.py  # ROS2 launch file for xarm robot
+│   ├── robot_command_receiver.launch.py  # ROS2 launch file for command receiver
+│   ├── rosbridge_server.launch.py  # ROS2 launch file for ROSBridge server
+│   ├── start_socket_server.sh # Script to start socket server
+│   ├── start_rosbridge.sh     # Script to start ROSBridge server
+│   ├── start_robot_system.sh  # Script to start entire robot system
+│   ├── README_Socket.md       # Socket communication setup guide
+│   └── README_ROSBridge.md    # ROSBridge communication setup guide
+│
+├── communication/              # Communication examples and documentation
+│   ├── example/               # Example client/server code
+│   │   ├── client.py         # Example socket client
+│   │   └── server.py         # Example socket server
+│   └── SOCKET_ISSUES.md      # Socket communication troubleshooting
+│
+├── test/                       # Unit tests and test utilities
+│   ├── __init__.py
+│   ├── test_voice_module.py   # Voice module tests
+│   ├── test_llm_module.py     # LLM module tests
+│   ├── test_executor_module.py # Executor module tests
+│   ├── test_plan_parser.py    # Plan parser tests
+│   ├── test_full_pipeline.py  # End-to-end pipeline tests
+│   ├── test_robot_commands.py # Robot command tests
+│   ├── test_socket_client.py  # Socket client tests
+│   ├── test_socket_real_server.py  # Real socket server integration tests
+│   └── llm_plans/             # Generated execution plans from tests
+│       └── *.txt              # Saved LLM-generated plans
+│
+├── test_robot_commands.py     # Standalone robot command test script
+├── test_rosbridge_connection.py  # ROSBridge connection test script
+├── llm_response.txt            # LLM response log file
+└── LICENSE                     # License file
 ```
 
 ### Directory Descriptions
@@ -306,18 +338,87 @@ Executes plans and controls the robot:
   - Handles relative movement calculations
   - Ensures home position before vision recognition
   - Preserves context between command executions
-- **robot_functions.py**: Placeholder implementations for robot atomic functions:
+- **robot_functions.py**: Atomic robot function implementations:
   - `move_home()`: Move to home position
   - `move(x, y, z)`: Move to absolute coordinates
   - `grasp(grasp)`: Grasp (True) or release (False)
   - `see(target)`: Vision recognition
+- **socket_client.py**: TCP Socket client for robot communication:
+  - Persistent TCP connection management
+  - Automatic reconnection on failures
+  - JSON message serialization/deserialization
+  - Error handling and retry logic
+- **rosbridge_client.py**: ROSBridge WebSocket client for robot communication:
+  - ROSBridge WebSocket connection management
+  - ROS2 topic publishing and subscription
+  - Response handling via topic subscriptions
+  - Alternative communication method
+
+#### `robot_execution/`
+Robot server-side code that runs on Raspberry Pi:
+- **socket_server.py**: TCP Socket server (ROS2 node) that:
+  - Listens for TCP connections on port 5005
+  - Receives JSON commands from client
+  - Publishes commands to ROS2 topics (`/endpoint_desired`, `/gripper_command`)
+  - Sends JSON responses back to client
+- **robot_command_receiver.py**: ROSBridge command receiver (ROS2 node) that:
+  - Subscribes to `/robot_commands` topic
+  - Executes robot commands via ROS2 topics
+  - Publishes responses to `/robot_command_response` topic
+- **command_xarm.py**: xarm robot command interface
+- **pick_and_place.py**: Pick and place operation implementations
+- **xarm_kinematics.py**: Robot kinematics calculations
+- **Launch files**: ROS2 launch files for starting robot system components
+- **Shell scripts**: Convenience scripts for starting servers and robot system
+- **README files**: Detailed setup guides for each communication method
+
+#### `communication/`
+Communication examples and troubleshooting:
+- **example/**: Example client/server code for testing communication
+- **SOCKET_ISSUES.md**: Troubleshooting guide for socket communication issues
 
 #### `test/`
 Comprehensive unit tests for all modules:
-- Individual module tests
-- Integration tests
-- Full pipeline tests
-- Generated LLM plans saved in `llm_plans/` subdirectory
+- **test_voice_module.py**: Voice recognition and command detection tests
+- **test_llm_module.py**: LLM plan generation tests
+- **test_executor_module.py**: Plan execution and context management tests
+- **test_plan_parser.py**: Plan parsing and validation tests
+- **test_full_pipeline.py**: End-to-end pipeline integration tests
+- **test_robot_commands.py**: Robot command execution tests
+- **test_socket_client.py**: Socket client communication tests
+- **test_socket_real_server.py**: Real socket server integration tests
+- **llm_plans/**: Generated execution plans from tests (saved as `.txt` files)
+
+#### Root Level Test Scripts
+- **test_robot_commands.py**: Standalone script for testing robot commands
+- **test_rosbridge_connection.py**: Script for testing ROSBridge connection
+
+## Hardware Environment
+
+### Robot Hardware Platform
+- **Raspberry Pi 4**: The robot control server runs on Raspberry Pi 4, which handles:
+  - ROS2 node execution
+  - Robot arm control (xarm)
+  - Vision system integration
+  - Socket/ROSBridge server hosting
+
+### ROS2 Environment
+- **ROS2 Jazzy**: The robot system uses ROS2 Jazzy (Jazzy Jalisco) as the robotics middleware
+  - ROS2 Jazzy is the recommended distribution for Ubuntu 24.04+ and modern Raspberry Pi systems
+  - Provides robust communication infrastructure for robot control
+  - Supports both native ROS2 topics and ROSBridge WebSocket communication
+
+### System Requirements
+- **Development Machine (Mac/PC)**:
+  - Python 3.8+
+  - Microphone for voice input
+  - Network connection to Raspberry Pi
+  
+- **Robot Server (Raspberry Pi 4)**:
+  - ROS2 Jazzy installed and configured
+  - xarm robot control nodes
+  - Vision system (camera)
+  - Network connectivity
 
 ## Installation
 
@@ -543,6 +644,65 @@ The robot arm uses a right-handed coordinate system with the robot base center a
 
 ## Communication Protocol
 
+The system supports **two communication methods** for connecting to the Raspberry Pi robot server:
+
+1. **TCP Socket Communication** (Primary/Recommended)
+2. **ROSBridge WebSocket Communication** (Alternative)
+
+Both methods use **JSON** messages for command and response exchange. The communication mode can be configured in `config.py` via the `ROBOT_COMMUNICATION_MODE` setting.
+
+### Overview of Communication Methods
+
+#### 1. TCP Socket Communication (Primary)
+
+**Advantages:**
+- ✅ **Simple and Reliable**: Direct TCP connection with minimal overhead
+- ✅ **Low Latency**: Direct socket communication without WebSocket protocol overhead
+- ✅ **Better Compatibility**: Works across all platforms and ROS2 distributions
+- ✅ **Persistent Connection**: Single connection maintained for all commands
+- ✅ **Automatic Reconnection**: Handles connection failures gracefully
+
+**How It Works:**
+- Client (Mac/PC) establishes a persistent TCP socket connection to Raspberry Pi
+- Commands are sent as JSON strings over TCP
+- Server responds with JSON status messages
+- Connection remains open for multiple commands
+- Automatic reconnection on connection failures
+
+**Use Case:** Recommended for most scenarios, especially when ROSBridge has compatibility issues.
+
+#### 2. ROSBridge WebSocket Communication (Alternative)
+
+**Advantages:**
+- ✅ **ROS2 Native Integration**: Direct integration with ROS2 topic system
+- ✅ **Standard Protocol**: Uses standard ROSBridge protocol
+- ✅ **Topic-based**: Can subscribe to ROS2 topics for real-time updates
+
+**Limitations:**
+- ⚠️ **Compatibility Issues**: May have issues on some systems (e.g., Debian Bookworm)
+- ⚠️ **Additional Dependency**: Requires `roslibpy` Python package
+- ⚠️ **WebSocket Overhead**: Slightly higher latency than direct TCP
+
+**How It Works:**
+- Client connects to ROSBridge WebSocket server on Raspberry Pi
+- Commands are published to ROS2 topics (e.g., `/robot_commands`)
+- Responses are received via ROS2 topic subscriptions (e.g., `/robot_command_response`)
+- Uses standard ROS2 message types
+
+**Use Case:** Useful when you need direct ROS2 topic integration or when working with ROS2-native tools.
+
+### Configuration
+
+The communication mode is selected in `config.py`:
+
+```python
+ROBOT_COMMUNICATION_MODE = "socket"  # Options: "socket" or "rosbridge"
+```
+
+---
+
+## TCP Socket Communication (Primary Method)
+
 The system communicates with the Raspberry Pi robot server via **TCP Socket** using **JSON** messages. The communication is persistent (single connection maintained) with automatic reconnection on failures.
 
 ### Connection Details
@@ -674,15 +834,15 @@ All communication settings are configurable in `config.py`:
 
 **Note**: The host can be overridden by setting the `ME578_RPI_IP_ADDR` environment variable.
 
-### Socket Server Setup on Raspberry Pi
+### Socket Server Setup on Raspberry Pi 4
 
-The system uses TCP Socket communication as the primary method. The socket server runs on the Raspberry Pi and integrates with ROS2 to control the robot.
+The system uses TCP Socket communication as the primary method. The socket server runs on the Raspberry Pi 4 and integrates with ROS2 Jazzy to control the robot.
 
 #### Setup Steps
 
-1. **Ensure ROS2 is installed and sourced**:
+1. **Ensure ROS2 Jazzy is installed and sourced**:
 ```bash
-source /opt/ros/humble/setup.bash  # Or your ROS2 version
+source /opt/ros/jazzy/setup.bash  # ROS2 Jazzy
 ```
 
 2. **Start robot control nodes** (if not already running):
@@ -719,11 +879,33 @@ Use the provided test scripts:
 
 For detailed setup instructions, see `robot_execution/README_Socket.md`.
 
-### ROSBridge Communication (Alternative)
+## ROSBridge WebSocket Communication (Alternative Method)
 
-The system also supports ROSBridge WebSocket communication as an alternative to TCP sockets. However, ROSBridge may have compatibility issues on some systems (e.g., Debian Bookworm).
+The system also supports ROSBridge WebSocket communication as an alternative to TCP sockets. ROSBridge provides direct integration with ROS2 topics, but may have compatibility issues on some systems (e.g., Debian Bookworm).
 
-#### Configuration
+### How ROSBridge Works
+
+ROSBridge uses WebSocket protocol to bridge non-ROS applications with ROS2 systems:
+
+1. **Connection**: Client connects to ROSBridge WebSocket server running on Raspberry Pi
+2. **Command Publishing**: Commands are published to ROS2 topics (e.g., `/robot_commands`)
+3. **Response Subscription**: Responses are received via ROS2 topic subscriptions (e.g., `/robot_command_response`)
+4. **ROS2 Integration**: Direct integration with ROS2 message types and topic system
+
+### Advantages and Limitations
+
+**Advantages:**
+- Direct ROS2 topic integration
+- Can subscribe to multiple ROS2 topics for real-time updates
+- Standard ROSBridge protocol
+
+**Limitations:**
+- May have compatibility issues on some systems (e.g., Debian Bookworm)
+- Requires `roslibpy` Python package
+- Slightly higher latency than TCP Socket
+- More complex setup
+
+### Configuration
 
 In `config.py`, set:
 ```python
@@ -732,26 +914,34 @@ ROSBridge_HOST = "10.141.25.190"        # Raspberry Pi IP
 ROSBridge_PORT = 9090                   # ROSBridge port
 ```
 
-#### Setup on Raspberry Pi
+### Setup on Raspberry Pi
 
-1. Install ROSBridge Suite:
+1. **Install ROSBridge Suite for ROS2 Jazzy**:
 ```bash
-# For Debian Bookworm, use ROS2 Humble:
-sudo apt install ros-humble-rosbridge-suite  # ROS2 Humble (推荐用于树莓派)
-
-# For Ubuntu 24.04+, use ROS2 Jazzy:
-sudo apt install ros-jazzy-rosbridge-suite  # ROS2 Jazzy
+# For ROS2 Jazzy (recommended for Raspberry Pi 4 with Ubuntu 24.04+):
+sudo apt install ros-jazzy-rosbridge-suite
 ```
 
-2. Start ROSBridge server:
+2. **Start ROSBridge server**:
 ```bash
 ros2 launch rosbridge_server rosbridge_websocket.launch.py port:=9090
 ```
 
-3. Start robot command receiver:
+3. **Start robot command receiver** (if using custom receiver):
 ```bash
 python3 robot_execution/robot_command_receiver.py
 ```
+
+### Command Format (ROSBridge)
+
+Commands are published to ROS2 topics as JSON messages, similar to TCP Socket format but using ROS2 topic communication.
+
+### When to Use ROSBridge
+
+- When you need direct ROS2 topic integration
+- When working with ROS2-native tools and visualization
+- When you need to subscribe to multiple ROS2 topics for monitoring
+- When TCP Socket is not available or preferred
 
 For detailed ROSBridge setup instructions, see `robot_execution/README_ROSBridge.md`.
 
